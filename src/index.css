@@ -9,6 +9,14 @@
 }
 
 @layer components {
+
+  @layer components {
+    .appearance-none {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+  }
   .btn {
     @apply min-w-[80px] h-10 px-4 rounded-md font-medium transition-all duration-150 ease-in-out;
   }

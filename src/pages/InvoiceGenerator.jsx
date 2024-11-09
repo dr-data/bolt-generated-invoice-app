@@ -38,8 +38,8 @@ const currencies = [
   { code: 'EUR', symbol: '€' },
   { code: 'GBP', symbol: '£' },
 ]
-function InvoiceGenerator() {
 
+function InvoiceGenerator() {
   const [logo, setLogo] = useState(null)
   const [currency, setCurrency] = useState(currencies[0])
   const [discount, setDiscount] = useState({ type: 'percentage', value: 0 })
@@ -121,7 +121,6 @@ function InvoiceGenerator() {
 
   const total = subtotal - calculateDiscount() + calculateTax() + (shipping.enabled ? shipping.value : 0)
 
-
   const generatePDF = async (data) => {
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -156,7 +155,7 @@ function InvoiceGenerator() {
     pdf.setFontSize(12)
     pdf.text(`#${data.invoiceNumber}`, 185, 35, { align: 'right' })
 
-    // Add company details with less spacing
+    // Add company details
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'bold')
     pdf.text(data.companyName, 25, 65)
@@ -167,34 +166,43 @@ function InvoiceGenerator() {
       pdf.text(line, 25, 70 + (index * 4))
     })
 
-    // Add invoice details (aligned left in a group)
+    // Add invoice details (right-aligned in a group)
     pdf.setFontSize(10)
-    const dateX = 120
-    const dateFormat = format(data.invoiceDate, 'dd/MM/yyyy')
-    const dueDateFormat = format(data.dueDate, 'dd/MM/yyyy')
+    const dateX = 140
+    const valueX = 185
+    const dateFormat = format(data.invoiceDate, 'MMM dd, yyyy')
+    const dueDateFormat = format(data.dueDate, 'MMM dd, yyyy')
     
-    if (data.invoiceDate) pdf.text(`Date: ${dateFormat.padStart(19, '_')}`, dateX, 65)
-    if (data.paymentTerms) pdf.text(`Payment Terms: ${data.paymentTerms}`, dateX, 70)
-    if (data.dueDate) pdf.text(`Due Date: ${dueDateFormat.padStart(19, '_')}`, dateX, 75)
+    // Right align labels, left align values
+    pdf.text('Date:', dateX, 65, { align: 'right' })
+    pdf.text(dateFormat, dateX + 5, 65)
+    
+    pdf.text('Payment Terms:', dateX, 70, { align: 'right' })
+    pdf.text(data.paymentTerms, dateX + 5, 70)
+    
+    pdf.text('Due Date:', dateX, 75, { align: 'right' })
+    pdf.text(dueDateFormat, dateX + 5, 75)
 
-    // Add "Bill To" section with less spacing
+    // Add Balance Due right after Due Date
+    pdf.text('Balance Due:', dateX, 80, { align: 'right' })
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(`${currency.symbol}${total.toFixed(2)}`, valueX, 80, { align: 'right' })
+    pdf.setFont('helvetica', 'normal')
+
+    // Add "Bill To" section
     if (data.billTo) {
       pdf.setFontSize(12)
       pdf.setFont('helvetica', 'bold')
-      pdf.text('Bill To', 25, 85)
+      pdf.text('Bill To:', 25, 85)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(10)
       const billToLines = data.billTo.split('\n')
       billToLines.forEach((line, index) => {
-        if (index === 0) {
-          pdf.setFont('helvetica', 'bold')
-          pdf.text(line, 25, 90 + (index * 4))
-        } else {
-          pdf.setFont('helvetica', 'normal')
-          pdf.text(line, 25, 90 + (index * 4))
-        }
+        pdf.text(line, 25, 90 + (index * 4))
       })
     }
 
-    // Add items table with proper alignment
+    // Add items table
     const tableBody = data.items
       .filter(item => item.description || item.quantity || item.rate)
       .map(item => [
@@ -213,76 +221,90 @@ function InvoiceGenerator() {
         headStyles: { fillColor: [30, 41, 59], textColor: 255, halign: 'left' },
         columnStyles: {
           0: { cellWidth: 'auto', halign: 'left' },
-          1: { cellWidth: 30, halign: 'left' },
-          2: { cellWidth: 40, halign: 'left' },
-          3: { cellWidth: 40, halign: 'left' }
+          1: { cellWidth: 30, halign: 'right' }, // Changed to right
+          2: { cellWidth: 40, halign: 'right' }, // Changed to right
+          3: { cellWidth: 40, halign: 'right' }  // Changed to right
         },
         margin: { left: 25 }
       })
     }
 
-    // Add totals with optimized spacing
+    // Add totals with right alignment
     const finalY = pdf.lastAutoTable.finalY + 3
     let currentY = finalY
+    const totalsX = 140
+    const amountsX = 185
 
-    pdf.text(editableFields.subtotalLabel, 140, currentY)
-    pdf.text(`${currency.symbol}${subtotal.toFixed(2)}`, 185, currentY, { align: 'right' })
+    // Subtotal
+    pdf.text(editableFields.subtotalLabel, totalsX, currentY, { align: 'right' })
+    pdf.text(`${currency.symbol}${subtotal.toFixed(2)}`, amountsX, currentY, { align: 'right' })
 
+    // Only show discount if value > 0
     if (discount.value > 0) {
       currentY += 4
-      pdf.text(editableFields.discountLabel, 140, currentY)
-      pdf.text(`${currency.symbol}${calculateDiscount().toFixed(2)}`, 185, currentY, { align: 'right' })
+      pdf.text(editableFields.discountLabel, totalsX, currentY, { align: 'right' })
+      pdf.text(`${currency.symbol}${calculateDiscount().toFixed(2)}`, amountsX, currentY, { align: 'right' })
     }
 
-    if (tax.enabled) {
+    // Only show tax if enabled and value > 0
+    if (tax.enabled && tax.value > 0) {
       currentY += 4
-      pdf.text(editableFields.taxLabel, 140, currentY)
-      pdf.text(`${currency.symbol}${calculateTax().toFixed(2)}`, 185, currentY, { align: 'right' })
+      pdf.text(editableFields.taxLabel, totalsX, currentY, { align: 'right' })
+      pdf.text(`${currency.symbol}${calculateTax().toFixed(2)}`, amountsX, currentY, { align: 'right' })
     }
 
-    if (shipping.enabled) {
+    // Only show shipping if enabled and value > 0
+    if (shipping.enabled && shipping.value > 0) {
       currentY += 4
-      pdf.text(editableFields.shippingLabel, 140, currentY)
-      pdf.text(`${currency.symbol}${shipping.value.toFixed(2)}`, 185, currentY, { align: 'right' })
+      pdf.text(editableFields.shippingLabel, totalsX, currentY, { align: 'right' })
+      pdf.text(`${currency.symbol}${shipping.value.toFixed(2)}`, amountsX, currentY, { align: 'right' })
     }
 
-    currentY += 4
+    // Total
+    currentY += 6
     pdf.setFont('helvetica', 'bold')
-    pdf.text(editableFields.totalLabel, 140, currentY)
-    pdf.text(`${currency.symbol}${total.toFixed(2)}`, 185, currentY, { align: 'right' })
+    pdf.text(editableFields.totalLabel, totalsX, currentY, { align: 'right' })
+    pdf.text(`${currency.symbol}${total.toFixed(2)}`, amountsX, currentY, { align: 'right' })
+    pdf.setFont('helvetica', 'normal')
 
-    currentY += 4
-    pdf.text(editableFields.balanceDueLabel, 140, currentY)
-    pdf.text(`${currency.symbol}${total.toFixed(2)}`, 185, currentY, { align: 'right' })
+    // Add additional information aligned with items table
+    currentY += 15
+    const leftMargin = 25
 
-    // Only add additional information if they have content
+    // Only add sections if they have content
     if (data.notes && data.notes.trim()) {
-      currentY += 8
       pdf.setFont('helvetica', 'bold')
-      pdf.text(editableFields.notesLabel, 25, currentY)
+      pdf.text(editableFields.notesLabel, leftMargin, currentY)
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(10)
-      pdf.text(data.notes, 25, currentY + 4)
+      const notesLines = data.notes.split('\n')
+      notesLines.forEach((line, index) => {
+        pdf.text(line, leftMargin, currentY + 5 + (index * 4))
+      })
+      currentY += 20
     }
 
     if (data.termsAndConditions && data.termsAndConditions.trim()) {
-      currentY += 15
       pdf.setFont('helvetica', 'bold')
-      pdf.setFontSize(12)
-      pdf.text(editableFields.termsLabel, 25, currentY)
+      pdf.text(editableFields.termsLabel, leftMargin, currentY)
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(10)
-      pdf.text(data.termsAndConditions, 25, currentY + 4)
+      const termsLines = data.termsAndConditions.split('\n')
+      termsLines.forEach((line, index) => {
+        pdf.text(line, leftMargin, currentY + 5 + (index * 4))
+      })
+      currentY += 20
     }
 
     if (data.paymentDetails && data.paymentDetails.trim()) {
-      currentY += 15
       pdf.setFont('helvetica', 'bold')
-      pdf.setFontSize(12)
-      pdf.text(editableFields.paymentDetailsLabel, 25, currentY)
+      pdf.text(editableFields.paymentDetailsLabel, leftMargin, currentY)
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(10)
-      pdf.text(data.paymentDetails, 25, currentY + 4)
+      const paymentLines = data.paymentDetails.split('\n')
+      paymentLines.forEach((line, index) => {
+        pdf.text(line, leftMargin, currentY + 5 + (index * 4))
+      })
     }
 
     return pdf
@@ -393,7 +415,7 @@ function InvoiceGenerator() {
               <DatePicker
                 selected={value}
                 onChange={onChange}
-                className="form-input text-sm w-full"
+                className="form-input text-sm w-full text-right"
               />
             )}
           />
@@ -406,7 +428,7 @@ function InvoiceGenerator() {
           <input
             {...register('paymentTerms')}
             placeholder="e.g., 30 Days"
-            className="form-input text-sm"
+            className="form-input text-sm text-right appearance-none" // Added appearance-none
             list="paymentTermsOptions"
           />
           <datalist id="paymentTermsOptions">
@@ -464,7 +486,12 @@ function InvoiceGenerator() {
       {fields.map((field, index) => (
         <div key={field.id} className="grid grid-cols-12 gap-4 py-1 px-4 bg-white even:bg-gray-50 items-center group">
           <div className="col-span-6">
-            <input {...register(`items.${index}.description`)} placeholder="Item description" className="w-full bg-transparent" />
+            <textarea 
+              {...register(`items.${index}.description`)} 
+              placeholder="Item description" 
+              className="w-full bg-transparent resize-y min-h-[2.5rem]"
+              rows="1"
+            />
           </div>
           <div className="col-span-2">
             <input {...register(`items.${index}.quantity`)} type="number" className="w-full text-right bg-transparent" />
@@ -489,7 +516,7 @@ function InvoiceGenerator() {
         </div>
       ))}
 
-<button
+      <button
         type="button"
         onClick={() => append({ description: '', quantity: 1, rate: 0 })}
         className="btn btn-outline mt-4"
@@ -647,7 +674,8 @@ function InvoiceGenerator() {
             <span>{currency.symbol} {total.toFixed(2)}</span>
           </div>
         </div>
-      </div>    </div>
+      </div>
+    </div>
   )
 }
 
