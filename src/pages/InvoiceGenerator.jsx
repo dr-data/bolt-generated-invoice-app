@@ -38,8 +38,8 @@ const currencies = [
   { code: 'EUR', symbol: '€' },
   { code: 'GBP', symbol: '£' },
 ]
-
 function InvoiceGenerator() {
+
   const [logo, setLogo] = useState(null)
   const [currency, setCurrency] = useState(currencies[0])
   const [discount, setDiscount] = useState({ type: 'percentage', value: 0 })
@@ -121,6 +121,7 @@ function InvoiceGenerator() {
 
   const total = subtotal - calculateDiscount() + calculateTax() + (shipping.enabled ? shipping.value : 0)
 
+
   const generatePDF = async (data) => {
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -129,144 +130,160 @@ function InvoiceGenerator() {
       compress: true,
     })
 
-        // Set font
-        pdf.setFont('helvetica', 'normal')
+    // Set font
+    pdf.setFont('helvetica', 'normal')
 
-        // Add logo
-        if (logo) {
-          const img = new Image()
-          img.src = logo
-          const aspectRatio = img.width / img.height
-          const maxWidth = 40
-          const maxHeight = 40
-          let width = maxWidth
-          let height = width / aspectRatio
-          if (height > maxHeight) {
-            height = maxHeight
-            width = height * aspectRatio
-          }
-          pdf.addImage(logo, 'JPEG', 25, 25, width, height)
-        }
+    // Add logo
+    if (logo) {
+      const img = new Image()
+      img.src = logo
+      const aspectRatio = img.width / img.height
+      const maxWidth = 40
+      const maxHeight = 40
+      let width = maxWidth
+      let height = width / aspectRatio
+      if (height > maxHeight) {
+        height = maxHeight
+        width = height * aspectRatio
+      }
+      pdf.addImage(logo, 'JPEG', 25, 25, width, height)
+    }
+
+    // Add invoice title and number
+    pdf.setFontSize(24)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('INVOICE', 185, 25, { align: 'right' })
+    pdf.setFontSize(12)
+    pdf.text(`#${data.invoiceNumber}`, 185, 35, { align: 'right' })
+
+    // Add company details with less spacing
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(data.companyName, 25, 65)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(10)
+    const companyAddressLines = data.companyAddress.split('\n')
+    companyAddressLines.forEach((line, index) => {
+      pdf.text(line, 25, 70 + (index * 4))
+    })
+
+    // Add invoice details (aligned left in a group)
+    pdf.setFontSize(10)
+    const dateX = 120
+    const dateFormat = format(data.invoiceDate, 'dd/MM/yyyy')
+    const dueDateFormat = format(data.dueDate, 'dd/MM/yyyy')
     
-        // Add invoice title and number
-        pdf.setFontSize(24)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('INVOICE', 185, 25, { align: 'right' })
-        pdf.setFontSize(12)
-        pdf.text(`#${data.invoiceNumber}`, 185, 35, { align: 'right' })
-    
-        // Add company details
-        pdf.setFontSize(12)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(data.companyName, 25, 70)
-        pdf.setFont('helvetica', 'normal')
-        pdf.setFontSize(10)
-        const companyAddressLines = data.companyAddress.split('\n')
-        companyAddressLines.forEach((line, index) => {
-          pdf.text(line, 25, 75 + (index * 4))
-        })
-    
-        // Add invoice details
-        pdf.setFontSize(10)
-        if (data.invoiceDate) pdf.text(`Date: ${format(data.invoiceDate, 'dd/MM/yyyy')}`, 185, 70, { align: 'right' })
-        if (data.paymentTerms) pdf.text(`Payment Terms: ${data.paymentTerms}`, 185, 75, { align: 'right' })
-        if (data.dueDate) pdf.text(`Due Date: ${format(data.dueDate, 'dd/MM/yyyy')}`, 185, 80, { align: 'right' })
-    
-        // Add "Bill To" section
-        if (data.billTo) {
-          pdf.setFontSize(12)
+    if (data.invoiceDate) pdf.text(`Date: ${dateFormat.padStart(19, '_')}`, dateX, 65)
+    if (data.paymentTerms) pdf.text(`Payment Terms: ${data.paymentTerms}`, dateX, 70)
+    if (data.dueDate) pdf.text(`Due Date: ${dueDateFormat.padStart(19, '_')}`, dateX, 75)
+
+    // Add "Bill To" section with less spacing
+    if (data.billTo) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Bill To', 25, 85)
+      const billToLines = data.billTo.split('\n')
+      billToLines.forEach((line, index) => {
+        if (index === 0) {
           pdf.setFont('helvetica', 'bold')
-          pdf.text('Bill To', 25, 95)
+          pdf.text(line, 25, 90 + (index * 4))
+        } else {
           pdf.setFont('helvetica', 'normal')
-          pdf.setFontSize(10)
-          const billToLines = data.billTo.split('\n')
-          billToLines.forEach((line, index) => {
-            pdf.text(line, 25, 100 + (index * 4))
-          })
+          pdf.text(line, 25, 90 + (index * 4))
         }
-    
-        // Add items table
-        const tableBody = data.items
-          .filter(item => item.description || item.quantity || item.rate)
-          .map(item => [
-            item.description,
-            item.quantity,
-            `${currency.symbol}${Number(item.rate).toFixed(2)}`,
-            `${currency.symbol}${(item.quantity * item.rate).toFixed(2)}`
-          ])
-    
-        if (tableBody.length > 0) {
-          pdf.autoTable({
-            startY: 120,
-            head: [[editableFields.itemLabel, editableFields.quantityLabel, editableFields.rateLabel, editableFields.amountLabel]],
-            body: tableBody,
-            styles: { fontSize: 10, cellPadding: 3 },
-            headStyles: { fillColor: [30, 41, 59], textColor: 255 },
-            alternateRowStyles: { fillColor: [249, 250, 251] },
-            columnStyles: {
-              0: { cellWidth: 'auto' },
-              1: { cellWidth: 30, halign: 'right' },
-              2: { cellWidth: 40, halign: 'right' },
-              3: { cellWidth: 40, halign: 'right' },
-            },
-          })
-        }
-    
-        // Add totals
-        const finalY = pdf.lastAutoTable.finalY + 10
-        pdf.text(editableFields.subtotalLabel, 140, finalY)
-        pdf.text(`${currency.symbol}${subtotal.toFixed(2)}`, 185, finalY, { align: 'right' })
-    
-        if (discount.value > 0) {
-          pdf.text(editableFields.discountLabel, 140, finalY + 5)
-          pdf.text(`${currency.symbol}${calculateDiscount().toFixed(2)}`, 185, finalY + 5, { align: 'right' })
-        }
-    
-        if (tax.enabled) {
-          pdf.text(editableFields.taxLabel, 140, finalY + 10)
-          pdf.text(`${currency.symbol}${calculateTax().toFixed(2)}`, 185, finalY + 10, { align: 'right' })
-        }
-    
-        if (shipping.enabled) {
-          pdf.text(editableFields.shippingLabel, 140, finalY + 15)
-          pdf.text(`${currency.symbol}${shipping.value.toFixed(2)}`, 185, finalY + 15, { align: 'right' })
-        }
-    
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(editableFields.totalLabel, 140, finalY + 20)
-        pdf.text(`${currency.symbol}${total.toFixed(2)}`, 185, finalY + 20, { align: 'right' })
-    
-        pdf.text(editableFields.balanceDueLabel, 140, finalY + 25)
-        pdf.text(`${currency.symbol}${total.toFixed(2)}`, 185, finalY + 25, { align: 'right' })
-    
-        // Add additional information
-        if (data.notes) {
-          pdf.addPage()
-          pdf.setFont('helvetica', 'bold')
-          pdf.text(editableFields.notesLabel, 25, 25)
-          pdf.setFont('helvetica', 'normal')
-          pdf.setFontSize(10)
-          pdf.text(data.notes, 25, 35)
-        }
-    
-        if (data.termsAndConditions) {
-          pdf.setFont('helvetica', 'bold')
-          pdf.setFontSize(12)
-          pdf.text(editableFields.termsLabel, 25, pdf.internal.pageSize.height - 55)
-          pdf.setFont('helvetica', 'normal')
-          pdf.setFontSize(10)
-          pdf.text(data.termsAndConditions, 25, pdf.internal.pageSize.height - 45)
-        }
-    
-        if (data.paymentDetails) {
-          pdf.setFont('helvetica', 'bold')
-          pdf.setFontSize(12)
-          pdf.text(editableFields.paymentDetailsLabel, 25, pdf.internal.pageSize.height - 25)
-          pdf.setFont('helvetica', 'normal')
-          pdf.setFontSize(10)
-          pdf.text(data.paymentDetails, 25, pdf.internal.pageSize.height - 15)
-        }
-    
+      })
+    }
+
+    // Add items table with proper alignment
+    const tableBody = data.items
+      .filter(item => item.description || item.quantity || item.rate)
+      .map(item => [
+        item.description,
+        item.quantity,
+        `${currency.symbol}${Number(item.rate).toFixed(2)}`,
+        `${currency.symbol}${(item.quantity * item.rate).toFixed(2)}`
+      ])
+
+    if (tableBody.length > 0) {
+      pdf.autoTable({
+        startY: 105,
+        head: [[editableFields.itemLabel, editableFields.quantityLabel, editableFields.rateLabel, editableFields.amountLabel]],
+        body: tableBody,
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [30, 41, 59], textColor: 255, halign: 'left' },
+        columnStyles: {
+          0: { cellWidth: 'auto', halign: 'left' },
+          1: { cellWidth: 30, halign: 'left' },
+          2: { cellWidth: 40, halign: 'left' },
+          3: { cellWidth: 40, halign: 'left' }
+        },
+        margin: { left: 25 }
+      })
+    }
+
+    // Add totals with optimized spacing
+    const finalY = pdf.lastAutoTable.finalY + 3
+    let currentY = finalY
+
+    pdf.text(editableFields.subtotalLabel, 140, currentY)
+    pdf.text(`${currency.symbol}${subtotal.toFixed(2)}`, 185, currentY, { align: 'right' })
+
+    if (discount.value > 0) {
+      currentY += 4
+      pdf.text(editableFields.discountLabel, 140, currentY)
+      pdf.text(`${currency.symbol}${calculateDiscount().toFixed(2)}`, 185, currentY, { align: 'right' })
+    }
+
+    if (tax.enabled) {
+      currentY += 4
+      pdf.text(editableFields.taxLabel, 140, currentY)
+      pdf.text(`${currency.symbol}${calculateTax().toFixed(2)}`, 185, currentY, { align: 'right' })
+    }
+
+    if (shipping.enabled) {
+      currentY += 4
+      pdf.text(editableFields.shippingLabel, 140, currentY)
+      pdf.text(`${currency.symbol}${shipping.value.toFixed(2)}`, 185, currentY, { align: 'right' })
+    }
+
+    currentY += 4
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(editableFields.totalLabel, 140, currentY)
+    pdf.text(`${currency.symbol}${total.toFixed(2)}`, 185, currentY, { align: 'right' })
+
+    currentY += 4
+    pdf.text(editableFields.balanceDueLabel, 140, currentY)
+    pdf.text(`${currency.symbol}${total.toFixed(2)}`, 185, currentY, { align: 'right' })
+
+    // Only add additional information if they have content
+    if (data.notes && data.notes.trim()) {
+      currentY += 8
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(editableFields.notesLabel, 25, currentY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(10)
+      pdf.text(data.notes, 25, currentY + 4)
+    }
+
+    if (data.termsAndConditions && data.termsAndConditions.trim()) {
+      currentY += 15
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(12)
+      pdf.text(editableFields.termsLabel, 25, currentY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(10)
+      pdf.text(data.termsAndConditions, 25, currentY + 4)
+    }
+
+    if (data.paymentDetails && data.paymentDetails.trim()) {
+      currentY += 15
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(12)
+      pdf.text(editableFields.paymentDetailsLabel, 25, currentY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(10)
+      pdf.text(data.paymentDetails, 25, currentY + 4)
+    }
 
     return pdf
   }
@@ -362,7 +379,7 @@ function InvoiceGenerator() {
             onSave={(value) => handleEditableFieldChange('invoiceNumberLabel', value)}
             className="text-sm text-gray-500 self-center text-right"
           />
-          <input {...register('invoiceNumber')} className="form-input text-sm" />
+          <input {...register('invoiceNumber')} className="form-input text-sm text-right" />
           
           <EditableField
             value={editableFields.invoiceDateLabel}
