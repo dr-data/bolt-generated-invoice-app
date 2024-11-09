@@ -488,7 +488,7 @@ function InvoiceGenerator() {
               onSave={(value) => handleEditableFieldChange('notesLabel', value)}
               className="text-base font-medium mb-2"
             />
-            <textarea {...register('notes')} className="form-input w-full h-24 resize-none" />
+            <textarea {...register('notes')} className="form-input w-full h-24" />
           </div>
           <div>
             <EditableField
@@ -496,7 +496,7 @@ function InvoiceGenerator() {
               onSave={(value) => handleEditableFieldChange('termsLabel', value)}
               className="text-base font-medium mb-2"
             />
-            <textarea {...register('termsAndConditions')} className="form-input w-full h-24 resize-none" />
+            <textarea {...register('termsAndConditions')} className="form-input w-full h-24 " />
           </div>
           <div>
             <EditableField
@@ -504,7 +504,7 @@ function InvoiceGenerator() {
               onSave={(value) => handleEditableFieldChange('paymentDetailsLabel', value)}
               className="text-base font-medium mb-2"
             />
-            <textarea {...register('paymentDetails')} className="form-input w-full h-24 resize-none" />
+            <textarea {...register('paymentDetails')} className="form-input w-full h-24 " />
           </div>
         </div>
 
