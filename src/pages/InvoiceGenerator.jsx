@@ -359,14 +359,14 @@ function InvoiceGenerator() {
           <EditableField
             value={editableFields.invoiceNumberLabel}
             onSave={(value) => handleEditableFieldChange('invoiceNumberLabel', value)}
-            className="text-sm text-gray-500 self-center"
+            className="text-sm text-gray-500 self-center text-right"
           />
           <input {...register('invoiceNumber')} className="form-input text-sm" />
           
           <EditableField
             value={editableFields.invoiceDateLabel}
             onSave={(value) => handleEditableFieldChange('invoiceDateLabel', value)}
-            className="text-sm text-gray-500 self-center"
+            className="text-sm text-gray-500 self-center text-right"
           />
           <Controller
             control={control}
@@ -383,7 +383,7 @@ function InvoiceGenerator() {
           <EditableField
             value={editableFields.paymentTermsLabel}
             onSave={(value) => handleEditableFieldChange('paymentTermsLabel', value)}
-            className="text-sm text-gray-500 self-center"
+            className="text-sm text-gray-500 self-center text-right"
           />
           <input
             {...register('paymentTerms')}
@@ -400,7 +400,7 @@ function InvoiceGenerator() {
           <EditableField
             value={editableFields.dueDateLabel}
             onSave={(value) => handleEditableFieldChange('dueDateLabel', value)}
-            className="text-sm text-gray-500 self-center"
+            className="text-sm text-gray-500 self-center text-right"
           />
           <Controller
             control={control}
