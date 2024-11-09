@@ -449,7 +449,7 @@ function InvoiceGenerator() {
               <DatePicker
                 selected={value}
                 onChange={onChange}
-                className="form-input text-sm w-full"
+                className="form-input text-sm w-full text-right"
               />
             )}
           />
