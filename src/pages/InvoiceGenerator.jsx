@@ -52,7 +52,7 @@ function InvoiceGenerator() {
     paymentTermsLabel: 'Payment Terms',
     dueDateLabel: 'Due Date',
     billToLabel: 'Bill To',
-    optionalLabel: 'Optional',
+    optionalLabel: '',
     itemLabel: 'Item',
     quantityLabel: 'Quantity',
     rateLabel: 'Rate',
@@ -399,8 +399,7 @@ function InvoiceGenerator() {
             <EditableField
               value={editableFields.optionalLabel || "Optional"}
               onSave={(value) => handleEditableFieldChange('optionalLabel', value)}
-              className="text-base font-medium mb-2"
-            />
+              className="text-base font-medium mb-2 text-gray-500"            />
             <textarea 
               {...register('optional')} 
               placeholder="(Optional)" 
