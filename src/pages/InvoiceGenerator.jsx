@@ -52,6 +52,7 @@ function InvoiceGenerator() {
     paymentTermsLabel: 'Payment Terms',
     dueDateLabel: 'Due Date',
     billToLabel: 'Bill To',
+    optionalLabel: 'Optional',
     itemLabel: 'Item',
     quantityLabel: 'Quantity',
     rateLabel: 'Rate',
@@ -384,15 +385,29 @@ function InvoiceGenerator() {
             {errors.companyAddress && <p className="text-red-500 text-sm mt-1">{errors.companyAddress.message}</p>}
           </div>
 
+          <div className="grid grid-cols-2 gap-6">
           <div>
             <EditableField
               value={editableFields.billToLabel}
               onSave={(value) => handleEditableFieldChange('billToLabel', value)}
               className="text-base font-medium mb-2"
             />
-            <textarea {...register('billTo')} placeholder="Client Details" className="form-input w-full h-32 " />
+            <textarea {...register('billTo')} placeholder="Client Details" className="form-input w-full h-16" />
             {errors.billTo && <p className="text-red-500 text-sm mt-1">{errors.billTo.message}</p>}
           </div>
+          <div>
+            <EditableField
+              value={editableFields.optionalLabel || "Optional"}
+              onSave={(value) => handleEditableFieldChange('optionalLabel', value)}
+              className="text-base font-medium mb-2"
+            />
+            <textarea 
+              {...register('optional')} 
+              placeholder="(Optional)" 
+              className="form-input w-full h-16 placeholder-gray-400" 
+            />
+          </div>
+        </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 content-start">
