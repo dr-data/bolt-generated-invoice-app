@@ -152,12 +152,16 @@ function InvoiceGenerator() {
     // Add invoice title and number
     pdf.setFontSize(24)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('INVOICE', 185, 25, { align: 'right' })
+    pdf.text(`${editableFields.invoiceTitle}`, 185, 25, { align: 'right' })
     pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(128, 128, 128) // Set gray color
     pdf.text(`#${data.invoiceNumber}`, 185, 35, { align: 'right' })
+    
 
     // Add company details
     pdf.setFontSize(12)
+    pdf.setTextColor(0, 0, 0) // Reset to black color
     pdf.setFont('helvetica', 'bold')
     pdf.text(data.companyName, 25, 65)
     pdf.setFont('helvetica', 'normal')
@@ -169,6 +173,7 @@ function InvoiceGenerator() {
 
     // Add invoice details (right-aligned in a group)
     pdf.setFontSize(10)
+    pdf.setTextColor(128, 128, 128) // Set gray color
     const dateX = 140
     const valueX = 185
     const dateFormat = format(data.invoiceDate, 'MMM dd, yyyy')
@@ -184,11 +189,12 @@ function InvoiceGenerator() {
     pdf.text('Due Date:', dateX, 75, { align: 'right' })
     pdf.text(dueDateFormat, dateX + 5, 75)
 
+    pdf.setTextColor(0, 0, 0) // Reset to black color
     // Add Balance Due right after Due Date
     pdf.text('Balance Due:', dateX, 80, { align: 'right' })
     pdf.setFont('helvetica', 'bold')
     pdf.text(`${currency.symbol}${total.toFixed(2)}`, valueX, 80, { align: 'right' })
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont('helvetica', 'bold')
 
     // Add "Bill To" section
     if (data.billTo) {
@@ -356,7 +362,7 @@ function InvoiceGenerator() {
         </button>
       </div>
 
-      <div className="flex justify-between items-center mt-16">
+      <div className="flex justify-between items-start mt-16">
         <div {...getRootProps()} className="cursor-pointer hover:border-2 hover:border-gray-200 transition-all duration-200">
           <input {...getInputProps()} />
           {logo ? (
@@ -369,11 +375,21 @@ function InvoiceGenerator() {
             </div>
           )}
         </div>
-        <EditableField
-          value={editableFields.invoiceTitle}
-          onSave={(value) => handleEditableFieldChange('invoiceTitle', value)}
-          className="text-4xl font-bold tracking-wide text-gray-900"
-        />
+        <div className="text-right">
+          <EditableField
+              value={editableFields.invoiceTitle}
+              onSave={(value) => handleEditableFieldChange('invoiceTitle', value)}
+              className="text-4xl font-bold tracking-wide text-gray-900 mt-1"
+            />
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-gray-600 text-sm">#</span>
+            <input 
+              {...register('invoiceNumber')} 
+              className="form-input text-sm text-right w-32" 
+            />
+          </div>
+
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-12">
